@@ -284,7 +284,7 @@ int main() {
 					double check_speed = sqrt(vx * vx + vy * vy);
 					double check_car_s = sensor_fusion[i][5];
 
-					check_car_s += ((double) prev_size * 0.2 * check_speed);
+					check_car_s += ((double) prev_size * 0.02 * check_speed);
 					
 					if ((check_car_s > car_s) && ((check_car_s - car_s) < 30)){
 						too_close = true;
