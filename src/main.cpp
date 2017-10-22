@@ -160,29 +160,29 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
 
 }
 
-int laneChange(int lane, vector<vector<double>> sensor_fusion, int prev_size, double car_s){
-	bool no_change = false;
-	for(unsigned int i = 0; i < 3; i++){
-		for (unsigned int j = 0; j < sensor_fusion.size(); j++){
-			double d = sensor_fusion[j][6];
-			if (d < (2+4*i+2) && d > (2+4*i-2)){
-				double vx = sensor_fusion[j][3];
-				double vy = sensor_fusion[j][4];
-				double check_speed = sqrt(vx*vx + vy*vy);
-				double check_car_s = sensor_fusion[j][5];
-				check_car_s += ((double) prev_size * 0.02 * check_speed);
+// int laneChange(unsigned int lane, vector<vector<double>> sensor_fusion, int prev_size, double car_s){
+// 	bool no_change = false;
+// 	for(unsigned int i = 0; i < 3; i++){
+// 		for (unsigned int j = 0; j < sensor_fusion.size(); j++){
+// 			double d = sensor_fusion[j][6];
+// 			if (d < (2+4*i+2) && d > (2+4*i-2)){
+// 				double vx = sensor_fusion[j][3];
+// 				double vy = sensor_fusion[j][4];
+// 				double check_speed = sqrt(vx*vx + vy*vy);
+// 				double check_car_s = sensor_fusion[j][5];
+// 				check_car_s += ((double) prev_size * 0.02 * check_speed);
 
-				if (check_car_s >= car_s && ((check_car_s - car_s) > 40)){
-					no_change = true;
-				}
-			}
-		}
-		if (!no_change){
-			return i;
-		}
-	}
-	return lane;
-}
+// 				if (check_car_s >= car_s && ((check_car_s - car_s) > 40)){
+// 					no_change = true;
+// 				}
+// 			}
+// 		}
+// 		if (!no_change){
+// 			return i;
+// 		}
+// 	}
+// 	return lane;
+// }
 
 
 int main() {
@@ -263,8 +263,6 @@ int main() {
 
           	// Sensor Fusion Data, a list of all other cars on the same side of the road.
           	auto sensor_fusion = j[1]["sensor_fusion"];
-
-          	json msgJson;
 			
 			int prev_size = previous_path_x.size();
 
@@ -272,39 +270,114 @@ int main() {
 				car_s = end_path_s;
 			}
 
-			bool too_close = false;
-
-			for (unsigned int i = 0; i < sensor_fusion.size(); i++){
+			double left_lane = 9999;
+			double right_lane = 9999;
+			double current_lane = 9999;
+			bool left_rear = true;
+			bool right_rear = true;
+			int too_close = 0;
+			for (int i = 0; i < sensor_fusion.size(); i++){
 				double d = sensor_fusion[i][6];
-				if(d < (2 + 4 * lane + 2) && d > (2 + 4 * lane -2)){
+				int car_lane;
+				if ( d > 0 && d < 4){
+					car_lane = 0;
+				}
+				else if (d > 4 && d < 8){
+					car_lane = 1;
+				}
+				else if (d > 8 && d < 12){
+					car_lane = 2;
+				}
+				else{
+					continue;
+				}
+				double vx = sensor_fusion[i][3];
+				double vy = sensor_fusion[i][4];
+				double check_speed = sqrt((vx * vx) + (vy * vy));
+				double check_car_s = sensor_fusion[i][5];
 
-					double vx = sensor_fusion[i][3];
-					double vy = sensor_fusion[i][4];
+				check_car_s += ((double)prev_size * 0.02 *check_speed);
+				double car_dist = check_car_s - car_s;
+				if (car_dist > 0){
+					if (car_lane == lane){
+						current_lane = min(current_lane,car_dist*check_speed);
+						if (car_dist < 20 && car_dist > 0){
+							too_close = 2;
+						}
+						else if (car_dist < 30 && car_dist > 0 && too_close != 2){
+							too_close = 1;
+						}
 
-					double check_speed = sqrt(vx * vx + vy * vy);
-					double check_car_s = sensor_fusion[i][5];
-
-					check_car_s += ((double) prev_size * 0.2 * check_speed);
-					
-					if ((check_car_s > car_s) && ((check_car_s - car_s) < 30)){
-						too_close = true;
+					}
+					else if (car_lane - lane == -1){
+						left_lane = min(left_lane,car_dist*check_speed);
+					}
+					else if (car_lane - lane == 1){
+						// right_lane = right_lane || (check_car_s - car_s > -10 && check_car_s - car_s < 30);
+						right_lane = min(right_lane,car_dist*check_speed);
+					}
+				}
+				if (car_s > check_car_s){
+					if (car_lane - lane == -1){
+						left_rear = left_rear && car_s - check_car_s > 15;
+						if (left_rear && car_s - check_car_s < 25){
+							left_rear = left_rear && ref_vel > check_speed;
+						}
+					}
+					else if (car_lane - lane == 1){
+						right_rear = right_rear && car_s - check_car_s > 15;
+						if (right_rear && car_s - check_car_s < 25){
+							right_rear = right_rear && ref_vel > check_speed;
+						}
 					}
 				}
 			}
-
+			// std::cout<<ref_vel<<std::endl;
+			std::cout<<left_lane<<"~~"<<left_rear<<"~~"<<current_lane<<"~~"<<too_close<<"~~"<<right_lane<<"~~"<<right_rear<<std::endl;
 			if(too_close){
-				ref_vel -= 0.224;
-				lane = laneChange(lane, sensor_fusion, prev_size, car_s);
+				if(too_close==2){
+					ref_vel -= 0.448;
+				}
+				else {
+					ref_vel -= 0.224;
+				}
 			}
-			else if (ref_vel < 15){
-				ref_vel += 0.448;
+			else {
+				if (ref_vel < 15){
+					ref_vel += 0.448;
+				}
+				else if (ref_vel < 30){
+					ref_vel += 0.224;
+				}
+				else if (ref_vel < 49.5){
+					ref_vel += 0.112;
+				}
 			}
-			else if (ref_vel < 30){
-				ref_vel += 0.224;
+			if(current_lane < left_lane || current_lane < right_lane){
+				if (lane == 2){
+					if(left_lane > current_lane && left_rear){
+						lane -=1;
+					}
+
+				}
+				else if (lane == 0){
+					if(right_lane > current_lane && right_rear){
+						lane +=1;
+					}
+
+				}
+				else if (lane == 1){
+					if ((left_lane - right_lane > 0) && lane > 0 && left_rear){
+						lane -= 1;
+					}
+					else if ((right_lane - left_lane > 0) && lane < 2 && right_rear){
+						lane += 1;
+					}
+				}
+					// lane = laneChange(lane, sensor_fusion, prev_size, car_s);
 			}
-			else if (ref_vel < 49.5){
-				ref_vel += 0.112;
-			}
+			
+		    
 
 			vector<double> ptsx;
 			vector<double> ptsy;
@@ -330,7 +403,7 @@ int main() {
 
 				double ref_x_prev = previous_path_x[prev_size - 2];
 				double ref_y_prev = previous_path_y[prev_size - 2];
-				ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
+				// ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
 				
 				ptsx.push_back(ref_x_prev);
 				ptsx.push_back(ref_x);
@@ -351,7 +424,7 @@ int main() {
 			ptsy.push_back(wpt_1[1]);
 			ptsy.push_back(wpt_2[1]);
 			
-			for(unsigned int i =0; i < ptsx.size(); i++){
+			for(int i =0; i < ptsx.size(); i++){
 				double shift_x = ptsx[i] - ref_x;
 				double shift_y = ptsy[i] - ref_y;
 
@@ -366,7 +439,7 @@ int main() {
           	vector<double> next_x_vals;
           	vector<double> next_y_vals;
 
-			for (int i = 0; i < previous_path_x.size(); i++){
+			for (int i = 0; i < prev_size; i++){
 				next_x_vals.push_back(previous_path_x[i]);
 				next_y_vals.push_back(previous_path_y[i]);
 			}
@@ -374,12 +447,12 @@ int main() {
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
 			double target_x = 30.0;
 			double target_y = s(target_x);
-			double target_dist = sqrt(target_x * target_x + target_y *  target_y);  
+			double target_dist = sqrt((target_x * target_x) + (target_y * target_y));  
 			double x_add_on = 0;
 
-			for(int i = 0; i<50 - previous_path_x.size() ; i++){
+			for(int i = 1; i<50 - prev_size ; i++){
 				double N = (target_dist / (0.02 * ref_vel / 2.24));
-				double x_point = x_add_on + (target_x / N);
+				double x_point = x_add_on + target_x/N;
 				double y_point = s(x_point);
 				
 				x_add_on = x_point;
@@ -397,7 +470,7 @@ int main() {
 				next_y_vals.push_back(y_point);
 			}
 			
-			
+			json msgJson;
 			
 			msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
@@ -408,7 +481,8 @@ int main() {
           	ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
           
         }
-      } else {
+	  } 
+	  else {
         // Manual driving
         std::string msg = "42[\"manual\",{}]";
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
