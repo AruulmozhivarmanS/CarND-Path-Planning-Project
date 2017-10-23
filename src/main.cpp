@@ -300,16 +300,16 @@ int main() {
 
 				check_car_s += ((double)prev_size * 0.02 *check_speed);
 				double car_dist = check_car_s - car_s;
-				if (car_dist > 0 && car_dist < 75){
+				if (car_dist > 0 && car_dist < 70){
 					if (car_lane == lane){
 						current_lane = min(current_lane,car_dist*check_speed);
-						if (car_dist < 15 && car_dist > 0){
+						if (car_dist < 20 && car_dist > 0){
 							too_close = 3;
 						}
-						else if (car_dist < 35 && car_dist > 0 && too_close < 3){
+						else if (car_dist < 30 && car_dist > 0 && too_close < 3){
 							too_close = 2;
 						}
-						else if (car_dist < 42 && car_dist > 0 && too_close < 2){
+						else if (car_dist < 35 && car_dist > 0 && too_close < 2){
 							too_close = 1;
 						}
 
@@ -325,6 +325,7 @@ int main() {
 						far_lane = min(far_lane, car_dist*check_speed);
 					}
 				}
+				
 				if (car_s > check_car_s){
 					if (car_lane - lane == -1){
 						left_rear = left_rear && car_s - check_car_s > 15;
@@ -350,13 +351,13 @@ int main() {
 			std::cout<<left_lane<<"~~"<<left_rear<<"~~"<<current_lane<<"~~"<<too_close<<"~~"<<right_lane<<"~~"<<right_rear<<"~~^^"<<far_lane<<"~~"<<far_rear<<"^^~~"<<std::endl;
 			if(too_close){//To decelerate while too close to a vehicle
 				if(too_close==3){
-					ref_vel -= 0.448;
-				}
-				if(too_close==2){
 					ref_vel -= 0.224;
 				}
-				else {
+				if(too_close==2){
 					ref_vel -= 0.112;
+				}
+				else if (ref_vel > 32){
+					ref_vel -= 0.56;
 				}
 			}
 			else {//Adjusting the acceleration of the vehicle
@@ -369,13 +370,13 @@ int main() {
 				else if (ref_vel < 38){
 					ref_vel += 0.112;
 				}
-				else if (ref_vel < 47){
+				else if (ref_vel < 48){
 					ref_vel += 0.56;
 				}
 			}
 			if(current_lane < left_lane || current_lane < right_lane){
 				if (lane == 2){
-					if(left_lane > current_lane && left_rear){
+					if(left_lane - current_lane > 300 && left_rear){
 						lane -=1;
 						if (far_lane > left_lane && far_rear){
 							//Decelerate while switching between far lanes
@@ -385,7 +386,7 @@ int main() {
 
 				}
 				else if (lane == 0){
-					if(right_lane > current_lane && right_rear){
+					if(right_lane - current_lane > 300 && right_rear){
 						lane +=1;
 						if (far_lane > right_lane && far_rear){
 							//Decelerate while switching between far lanes
@@ -395,10 +396,10 @@ int main() {
 
 				}
 				else if (lane == 1){
-					if ((left_lane - right_lane > 0) && lane > 0 && left_rear){
+					if ((left_lane - right_lane > 300) && lane > 0 && left_rear){
 						lane -= 1;
 					}
-					else if ((right_lane - left_lane >= 0) && lane < 2 && right_rear){
+					else if ((right_lane - left_lane >= 300) && lane < 2 && right_rear){
 						lane += 1;
 					}
 				}
