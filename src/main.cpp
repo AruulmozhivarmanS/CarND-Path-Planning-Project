@@ -312,8 +312,6 @@ int main() {
 						else if (car_dist < 35 && car_dist > 0 && too_close < 2){
 							too_close = 1;
 						}
-
-<<<<<<< HEAD
 					}
 					else if (car_lane - lane == -1){
 						left_lane = min(left_lane,car_dist*check_speed);
@@ -345,12 +343,6 @@ int main() {
 						if (far_rear && car_s - check_car_s < 35){
 							far_rear = far_rear && ref_vel > check_speed;
 						}
-=======
-					check_car_s += ((double) prev_size * 0.02 * check_speed);
-					
-					if ((check_car_s > car_s) && ((check_car_s - car_s) < 30)){
-						too_close = true;
->>>>>>> 07e41b2cad61f1583c3ac92ae67b0c36e09d8ff2
 					}
 				}
 			}
