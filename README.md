@@ -1,6 +1,20 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
+## Code Explanation
+The project is divided into three modules:
+1) Prediction
+2) Behaviour
+3) Trajectory Generation
+
+### Prediction
+  In prediction module the data from sensor fusion module is used to generate predictions about the likley behaviour of other vehicles in the road. The prediction module checks if the car maintains a safe distance between other vehicles. It also checks if it is safe to turn.
+
+### Behaviour
+ Behaviour planning deals with the high level actions taken by the car. The inverse of the cost function given by the product of distance betwen the object and it's speed is used in the behaviour planning. The cost is maintaned for the closest obstacles in each lane. The search range for other cars is limited to 70m in order to prevent unwanted lane changes. The adjacent lane with the highest inverse cost is taken as the next lane. If the difference between inverse cost of the current lane and the adjacent lane is less than or equal to 300 then the lane change is prevented. This is done to prevent the car from making frequent lane changes. While making a double lane change the car's velocity is controlled  by deaccelerating the vehicle. While changing lane the target lane is checked for other vehicles. If there is no vehicle at a longitudinal displacement of 15m from the car and if the velocity of the vechiles at a distance of less than 35m is less than the velocity of the car then the lane change is made.   
+### Trajectory Generation
+
+ This module takes inputs from behaviour module and generates trajectory as a list of `x,y` points. The car's current state is converted into local coordinates and three points at 30m interval is used to form a spline. The points in the spline are used for trajectory generation. The points are converted into global coordinates and they are added to the list of previous points to make a smooth transition from previous trajectory to the next trajectory.  
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases).
 
@@ -87,54 +101,5 @@ A really helpful resource for doing this project and creating smooth trajectorie
     git checkout e94b6e1
     ```
 
-## Editor Settings
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
 
